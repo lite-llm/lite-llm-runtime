@@ -1,21 +1,36 @@
 # lite-llm-runtime
 
-Independent Rust crate skeleton for Lite LLM: Core Runtime Architecture (Spec 001-010).
+Core runtime crate for Lite LLM (`SPEC-001` to `SPEC-010`).
 
-## Purpose
-This crate provides compile-ready interfaces and placeholder implementations for its spec layer.
+## Scope
+Implements deterministic runtime primitives:
 
-## Structure
-- src/lib.rs: module exports and public API surface
-- src/*.rs: layer-specific primitives and traits
+- runtime lifecycle boot/load/activation/recovery flow
+- deterministic routing engine with stable top-k behavior
+- TierSet and routing seed contracts
+- active compute-bound invariants
+- runtime error model and state machine
 
-## Build
-`ash
-cargo check
-`
+## Modules
+- `src/process.rs`: boot model, manifest parsing/validation, load phases, recovery
+- `src/routing.rs`: deterministic router, stable tie-break ordering
+- `src/config.rs`: Tier and routing configuration primitives
+- `src/compute.rs`: compute-bound enforcement and model helpers
+- `src/state_machine.rs`: runtime transition model
+- `src/error.rs`: runtime error model
 
-## Notes
-- This crate is intentionally standalone.
-- Runtime behavior is scaffolded, not production-complete.
-- License for this crate is in LICENSE.
+## Build and Test
+```bash
+cargo fmt
+cargo test
+```
 
+## Documentation
+- System docs: `../lite-llm-docs/README.md`
+- Architecture: `../lite-llm-docs/architecture/system-architecture.md`
+
+## Changelog
+See `CHANGELOG.md`.
+
+## License
+See `LICENSE`.
