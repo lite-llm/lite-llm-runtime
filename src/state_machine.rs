@@ -73,13 +73,13 @@ impl RuntimeStateMachine {
     }
 
     pub fn transition(&mut self, to: RuntimeState) -> RuntimeResult<()> {
-        self.state = self
-            .state
-            .transition(to)
-            .map_err(|err| RuntimeError::InvalidStateTransition {
-                from: err.from,
-                to: err.to,
-            })?;
+        self.state =
+            self.state
+                .transition(to)
+                .map_err(|err| RuntimeError::InvalidStateTransition {
+                    from: err.from,
+                    to: err.to,
+                })?;
         Ok(())
     }
 

@@ -183,13 +183,8 @@ impl Router for DeterministicRouter {
                     ));
                 }
 
-                let expert_scores = self.expert_scores(
-                    token_state,
-                    token_seed,
-                    tier_id,
-                    group_idx as u32,
-                    experts,
-                );
+                let expert_scores =
+                    self.expert_scores(token_state, token_seed, tier_id, group_idx as u32, experts);
                 let expert_indices = stable_top_k(
                     &expert_scores,
                     cfg.k_expert.min(experts),
@@ -251,11 +246,7 @@ pub fn stable_top_k(scores: &[f32], k: usize, seed: u64, scale: f32) -> Vec<usiz
         .collect();
 
     // Stable sort ensures deterministic order even when all comparator keys match.
-    ranked.sort_by(|a, b| {
-        b.1.cmp(&a.1)
-            .then(a.2.cmp(&b.2))
-            .then(a.0.cmp(&b.0))
-    });
+    ranked.sort_by(|a, b| b.1.cmp(&a.1).then(a.2.cmp(&b.2)).then(a.0.cmp(&b.0)));
 
     ranked
         .into_iter()

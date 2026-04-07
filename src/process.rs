@@ -28,7 +28,9 @@ impl RuntimeOptions {
         let mut seen = HashSet::new();
         for tier in &self.available_tiers {
             if !seen.insert(tier.id.0) {
-                return Err(RuntimeError::InvalidManifest("duplicate tier id in runtime"));
+                return Err(RuntimeError::InvalidManifest(
+                    "duplicate tier id in runtime",
+                ));
             }
             if tier.groups == 0 || tier.experts_per_group == 0 {
                 return Err(RuntimeError::InvalidManifest(
@@ -95,13 +97,11 @@ impl CheckpointManifest {
                         if trimmed.is_empty() {
                             continue;
                         }
-                        parsed.push(TierId(
-                            trimmed.parse::<u16>().map_err(|_| {
-                                RuntimeError::InvalidManifest(
-                                    "tiers must contain comma-separated u16 values",
-                                )
-                            })?,
-                        ));
+                        parsed.push(TierId(trimmed.parse::<u16>().map_err(|_| {
+                            RuntimeError::InvalidManifest(
+                                "tiers must contain comma-separated u16 values",
+                            )
+                        })?));
                     }
                     tiers = Some(parsed);
                 }
@@ -362,7 +362,10 @@ impl RuntimeLifecycle {
         self.ensure_tiers_known(&tiers)?;
 
         let state = self.state_machine.state();
-        if !matches!(state, RuntimeState::Warm | RuntimeState::Active | RuntimeState::Recovering) {
+        if !matches!(
+            state,
+            RuntimeState::Warm | RuntimeState::Active | RuntimeState::Recovering
+        ) {
             return Err(RuntimeError::InvalidLoadOrder(
                 "tiers can only be activated in Warm, Active, or Recovering",
             ));
@@ -460,7 +463,12 @@ impl RuntimeLifecycle {
     }
 
     fn ensure_tiers_known(&self, tiers: &TierSet) -> RuntimeResult<()> {
-        let available: HashSet<u16> = self.options.available_tiers.iter().map(|tier| tier.id.0).collect();
+        let available: HashSet<u16> = self
+            .options
+            .available_tiers
+            .iter()
+            .map(|tier| tier.id.0)
+            .collect();
 
         for tier in &tiers.tiers {
             if !available.contains(&tier.0) {
@@ -480,9 +488,7 @@ impl RuntimeLifecycle {
 mod tests {
     use crate::config::{Placement, TierConfig};
 
-    use super::{
-        BootStage, ModelLoadStage, RuntimeLifecycle, RuntimeOptions, RuntimeStatus,
-    };
+    use super::{BootStage, ModelLoadStage, RuntimeLifecycle, RuntimeOptions, RuntimeStatus};
     use crate::config::{RoutingSeed, TierId, TierSet};
     use crate::state_machine::RuntimeState;
 
@@ -549,7 +555,10 @@ mod tests {
             .complete_model_load()
             .expect("complete model load should succeed");
 
-        assert_eq!(lifecycle.status().model_load_stage, ModelLoadStage::Complete);
+        assert_eq!(
+            lifecycle.status().model_load_stage,
+            ModelLoadStage::Complete
+        );
         assert_state(lifecycle.status(), RuntimeState::Warm);
 
         lifecycle
