@@ -15,12 +15,12 @@ pub struct RuntimeOptions {
 impl RuntimeOptions {
     pub fn validate(&self) -> RuntimeResult<()> {
         if self.available_tiers.is_empty() {
-            return Err(RuntimeError::InvalidManifest(
+            return Err(RuntimeError::invalid_manifest(
                 "runtime must define at least one available tier",
             ));
         }
         if self.expected_manifest_version == 0 {
-            return Err(RuntimeError::InvalidManifest(
+            return Err(RuntimeError::invalid_manifest(
                 "expected manifest version must be greater than zero",
             ));
         }
@@ -28,12 +28,12 @@ impl RuntimeOptions {
         let mut seen = HashSet::new();
         for tier in &self.available_tiers {
             if !seen.insert(tier.id.0) {
-                return Err(RuntimeError::InvalidManifest(
+                return Err(RuntimeError::invalid_manifest(
                     "duplicate tier id in runtime",
                 ));
             }
             if tier.groups == 0 || tier.experts_per_group == 0 {
-                return Err(RuntimeError::InvalidManifest(
+                return Err(RuntimeError::invalid_manifest(
                     "tier groups and experts_per_group must be > 0",
                 ));
             }
@@ -79,15 +79,15 @@ impl CheckpointManifest {
             let mut parts = line.splitn(2, '=');
             let key = parts
                 .next()
-                .ok_or(RuntimeError::InvalidManifest("malformed manifest line"))?;
+                .ok_or_else(|| RuntimeError::invalid_manifest("malformed manifest line"))?;
             let value = parts
                 .next()
-                .ok_or(RuntimeError::InvalidManifest("manifest line missing '='"))?;
+                .ok_or_else(|| RuntimeError::invalid_manifest("manifest line missing '='"))?;
 
             match key {
                 "version" => {
                     version = Some(value.parse::<u32>().map_err(|_| {
-                        RuntimeError::InvalidManifest("version must be an unsigned integer")
+                        RuntimeError::invalid_manifest("version must be an unsigned integer")
                     })?);
                 }
                 "tiers" => {
@@ -98,7 +98,7 @@ impl CheckpointManifest {
                             continue;
                         }
                         parsed.push(TierId(trimmed.parse::<u16>().map_err(|_| {
-                            RuntimeError::InvalidManifest(
+                            RuntimeError::invalid_manifest(
                                 "tiers must contain comma-separated u16 values",
                             )
                         })?));
@@ -110,7 +110,7 @@ impl CheckpointManifest {
                         "true" => true,
                         "false" => false,
                         _ => {
-                            return Err(RuntimeError::InvalidManifest(
+                            return Err(RuntimeError::invalid_manifest(
                                 "cumulative must be true or false",
                             ));
                         }
@@ -129,16 +129,16 @@ impl CheckpointManifest {
                     let mut shard_parts = value.split('|');
                     let shard_id = shard_parts
                         .next()
-                        .ok_or(RuntimeError::InvalidManifest("shard id missing"))?;
+                        .ok_or_else(|| RuntimeError::invalid_manifest("shard id missing"))?;
                     let checksum_hex = shard_parts
                         .next()
-                        .ok_or(RuntimeError::InvalidManifest("shard checksum missing"))?;
+                        .ok_or_else(|| RuntimeError::invalid_manifest("shard checksum missing"))?;
                     let bytes = shard_parts
                         .next()
-                        .ok_or(RuntimeError::InvalidManifest("shard byte size missing"))?
+                        .ok_or_else(|| RuntimeError::invalid_manifest("shard byte size missing"))?
                         .parse::<u64>()
                         .map_err(|_| {
-                            RuntimeError::InvalidManifest("shard byte size must be unsigned")
+                            RuntimeError::invalid_manifest("shard byte size must be unsigned")
                         })?;
 
                     shards.push(ManifestShard {
@@ -148,7 +148,7 @@ impl CheckpointManifest {
                     });
                 }
                 _ => {
-                    return Err(RuntimeError::InvalidManifest(
+                    return Err(RuntimeError::invalid_manifest(
                         "unknown manifest field encountered",
                     ));
                 }
@@ -156,15 +156,15 @@ impl CheckpointManifest {
         }
 
         Ok(Self {
-            version: version.ok_or(RuntimeError::InvalidManifest("version missing"))?,
+            version: version.ok_or_else(|| RuntimeError::invalid_manifest("version missing"))?,
             tiers: TierSet {
-                tiers: tiers.ok_or(RuntimeError::InvalidManifest("tiers missing"))?,
+                tiers: tiers.ok_or_else(|| RuntimeError::invalid_manifest("tiers missing"))?,
                 cumulative,
             },
             base_parameters_checksum: base_parameters_checksum
-                .ok_or(RuntimeError::InvalidManifest("base_checksum missing"))?,
+                .ok_or_else(|| RuntimeError::invalid_manifest("base_checksum missing"))?,
             router_checksum: router_checksum
-                .ok_or(RuntimeError::InvalidManifest("router_checksum missing"))?,
+                .ok_or_else(|| RuntimeError::invalid_manifest("router_checksum missing"))?,
             optimizer_checksum,
             shards,
         })
@@ -181,19 +181,19 @@ impl CheckpointManifest {
             return Err(RuntimeError::EmptyTierSet);
         }
         if self.base_parameters_checksum.is_empty() || self.router_checksum.is_empty() {
-            return Err(RuntimeError::InvalidManifest(
+            return Err(RuntimeError::invalid_manifest(
                 "base/router checksums must be present",
             ));
         }
         if self.shards.is_empty() {
-            return Err(RuntimeError::InvalidManifest(
+            return Err(RuntimeError::invalid_manifest(
                 "manifest must include at least one shard",
             ));
         }
 
         for shard in &self.shards {
             if shard.shard_id.is_empty() || shard.checksum_hex.is_empty() || shard.bytes == 0 {
-                return Err(RuntimeError::InvalidManifest(
+                return Err(RuntimeError::invalid_manifest(
                     "each shard must include id, checksum, and positive byte size",
                 ));
             }
@@ -281,7 +281,7 @@ impl RuntimeLifecycle {
 
     pub fn boot(&mut self) -> RuntimeResult<()> {
         if self.state_machine.state() != RuntimeState::Init {
-            return Err(RuntimeError::InvalidBootOrder(
+            return Err(RuntimeError::invalid_boot_order(
                 "boot is only valid when runtime is in Init state",
             ));
         }
@@ -366,7 +366,7 @@ impl RuntimeLifecycle {
             state,
             RuntimeState::Warm | RuntimeState::Active | RuntimeState::Recovering
         ) {
-            return Err(RuntimeError::InvalidLoadOrder(
+            return Err(RuntimeError::invalid_load_order(
                 "tiers can only be activated in Warm, Active, or Recovering",
             ));
         }
@@ -414,7 +414,7 @@ impl RuntimeLifecycle {
         resume_active: bool,
     ) -> RuntimeResult<()> {
         if self.state_machine.state() != RuntimeState::Recovering {
-            return Err(RuntimeError::RecoveryFailed(
+            return Err(RuntimeError::recovery_failed(
                 "runtime must be in Recovering state before restore",
             ));
         }
@@ -430,9 +430,7 @@ impl RuntimeLifecycle {
         let manifest_tiers = self
             .manifest
             .as_ref()
-            .ok_or(RuntimeError::RecoveryFailed(
-                "manifest missing during recovery",
-            ))?
+            .ok_or_else(|| RuntimeError::recovery_failed("manifest missing during recovery"))?
             .tiers
             .clone();
         self.activate_tiers(manifest_tiers)?;
@@ -446,7 +444,7 @@ impl RuntimeLifecycle {
 
     fn ensure_boot_complete(&self) -> RuntimeResult<()> {
         if self.boot_stage != BootStage::LoggingStarted {
-            return Err(RuntimeError::InvalidBootOrder(
+            return Err(RuntimeError::invalid_boot_order(
                 "boot sequence must complete before model loading",
             ));
         }
@@ -455,7 +453,7 @@ impl RuntimeLifecycle {
 
     fn ensure_model_stage(&self, expected: ModelLoadStage) -> RuntimeResult<()> {
         if self.model_load_stage != expected {
-            return Err(RuntimeError::InvalidLoadOrder(
+            return Err(RuntimeError::invalid_load_order(
                 "model loading phases must execute in order",
             ));
         }

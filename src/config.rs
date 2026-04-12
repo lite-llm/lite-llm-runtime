@@ -1,6 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 use crate::error::{RuntimeError, RuntimeResult};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct TierId(pub u16);
 
 impl TierId {
@@ -9,7 +11,7 @@ impl TierId {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Placement {
     Hot,
     Warm,
@@ -17,7 +19,7 @@ pub enum Placement {
     Archive,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TierConfig {
     pub id: TierId,
     pub groups: u32,
@@ -79,17 +81,17 @@ pub struct RoutingConfig {
 impl RoutingConfig {
     pub fn validate(self) -> RuntimeResult<()> {
         if self.k_tier == 0 {
-            return Err(RuntimeError::InvalidRoutingConfig(
+            return Err(RuntimeError::invalid_routing_config(
                 "k_tier must be greater than zero",
             ));
         }
         if self.k_group == 0 {
-            return Err(RuntimeError::InvalidRoutingConfig(
+            return Err(RuntimeError::invalid_routing_config(
                 "k_group must be greater than zero",
             ));
         }
         if self.k_expert == 0 {
-            return Err(RuntimeError::InvalidRoutingConfig(
+            return Err(RuntimeError::invalid_routing_config(
                 "k_expert must be greater than zero",
             ));
         }

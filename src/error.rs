@@ -11,21 +11,53 @@ pub enum RuntimeError {
         from: RuntimeState,
         to: RuntimeState,
     },
-    InvalidBootOrder(&'static str),
-    InvalidLoadOrder(&'static str),
-    InvalidManifest(&'static str),
+    InvalidBootOrder(String),
+    InvalidLoadOrder(String),
+    InvalidManifest(String),
     UnsupportedManifestVersion {
         expected: u32,
         found: u32,
     },
     UnknownTier(u16),
     EmptyTierSet,
-    InvalidRoutingConfig(&'static str),
+    InvalidRoutingConfig(String),
     ComputeBoundExceeded {
         actual: usize,
         max: usize,
     },
-    RecoveryFailed(&'static str),
+    RecoveryFailed(String),
+    IoError(String),
+    SerializationError(String),
+}
+
+impl RuntimeError {
+    pub fn invalid_boot_order(msg: impl Into<String>) -> Self {
+        Self::InvalidBootOrder(msg.into())
+    }
+
+    pub fn invalid_load_order(msg: impl Into<String>) -> Self {
+        Self::InvalidLoadOrder(msg.into())
+    }
+
+    pub fn invalid_manifest(msg: impl Into<String>) -> Self {
+        Self::InvalidManifest(msg.into())
+    }
+
+    pub fn invalid_routing_config(msg: impl Into<String>) -> Self {
+        Self::InvalidRoutingConfig(msg.into())
+    }
+
+    pub fn recovery_failed(msg: impl Into<String>) -> Self {
+        Self::RecoveryFailed(msg.into())
+    }
+
+    pub fn io_error(msg: impl Into<String>) -> Self {
+        Self::IoError(msg.into())
+    }
+
+    pub fn serialization_error(msg: impl Into<String>) -> Self {
+        Self::SerializationError(msg.into())
+    }
 }
 
 impl fmt::Display for RuntimeError {
@@ -49,6 +81,8 @@ impl fmt::Display for RuntimeError {
                 "active experts exceeded compute bound: actual {actual}, max {max}"
             ),
             Self::RecoveryFailed(msg) => write!(f, "recovery failed: {msg}"),
+            Self::IoError(msg) => write!(f, "io error: {msg}"),
+            Self::SerializationError(msg) => write!(f, "serialization error: {msg}"),
         }
     }
 }

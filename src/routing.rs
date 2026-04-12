@@ -162,7 +162,7 @@ impl Router for DeterministicRouter {
                 .ok_or(RuntimeError::UnknownTier(tier_id.0))?;
             let groups = tier_cfg.groups as usize;
             if groups == 0 {
-                return Err(RuntimeError::InvalidRoutingConfig(
+                return Err(RuntimeError::invalid_routing_config(
                     "tier groups must be greater than zero",
                 ));
             }
@@ -178,7 +178,7 @@ impl Router for DeterministicRouter {
             for group_idx in group_indices {
                 let experts = tier_cfg.experts_per_group as usize;
                 if experts == 0 {
-                    return Err(RuntimeError::InvalidRoutingConfig(
+                    return Err(RuntimeError::invalid_routing_config(
                         "experts_per_group must be greater than zero",
                     ));
                 }
