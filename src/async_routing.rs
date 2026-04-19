@@ -1,3 +1,23 @@
+//! Async routing table with concurrent access and file-based persistence.
+//!
+//! Provides a thread-safe routing table backed by `tokio::sync::RwLock` that
+//! supports concurrent reads and writes, with JSON serialization for persisting
+//! routing state across restarts.
+//!
+//! # Key Types
+//!
+//! - [`AsyncRoute`] -- serializable representation of a routing decision
+//! - [`RoutingTableEntry`] -- per-token routing entry with routes list
+//! - [`RoutingTableSnapshot`] -- full table snapshot for persistence
+//! - [`AsyncRoutingTable`] -- concurrent routing table with compute, cache, and persist ops
+//!
+//! # Features
+//!
+//! - Concurrent read/write access via `RwLock`
+//! - Deterministic route computation matching `DeterministicRouter`
+//! - JSON file persistence for routing state replay
+//! - Quantized weight storage for compact serialization
+
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -71,6 +91,7 @@ pub struct AsyncRoutingTable {
 }
 
 impl AsyncRoutingTable {
+    /// Create a new empty async routing table with the given seed and tier catalog.
     pub fn new(seed: RoutingSeed, tier_catalog: Vec<TierConfig>) -> Self {
         Self {
             inner: RwLock::new(HashMap::new()),
@@ -80,6 +101,7 @@ impl AsyncRoutingTable {
         }
     }
 
+    /// Set the quantization scale for route weight storage (default: 1,000,000).
     pub fn with_quantization_scale(mut self, quantization_scale: f32) -> Self {
         self.quantization_scale = quantization_scale.max(1.0);
         self

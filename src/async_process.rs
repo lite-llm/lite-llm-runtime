@@ -1,3 +1,22 @@
+//! Async runtime lifecycle and manifest management.
+//!
+//! Provides async-capable versions of the synchronous process types with
+//! serde serialization support, enabling persistent checkpoint and manifest
+//! operations across restarts.
+//!
+//! # Key Types
+//!
+//! - [`AsyncCheckpointManifest`] -- serializable manifest with tier and shard metadata
+//! - [`AsyncManifestShard`] -- individual shard entry with checksum
+//! - [`AsyncTierSet`] -- serializable tier set with cumulative resolution
+//! - [`AsyncRuntimeLifecycle`] -- async boot, load, activate, shutdown, and recovery flow
+//!
+//! # Async Operations
+//!
+//! All model loading, tier activation, and recovery operations are async,
+//! allowing non-blocking I/O for manifest reads, checkpoint persistence,
+//! and file-based state management.
+
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
@@ -35,14 +54,17 @@ pub struct AsyncTierSet {
 }
 
 impl AsyncTierSet {
+    /// Create a new async tier set.
     pub fn new(tiers: Vec<TierId>, cumulative: bool) -> Self {
         Self { tiers, cumulative }
     }
 
+    /// Check if this tier set has no tiers.
     pub fn is_empty(&self) -> bool {
         self.tiers.is_empty()
     }
 
+    /// Check if the given tier is contained in this set (with cumulative resolution).
     pub fn contains(&self, tier: TierId) -> bool {
         if self.cumulative {
             self.tiers
@@ -55,6 +77,7 @@ impl AsyncTierSet {
         }
     }
 
+    /// Resolve this tier set against the available tiers catalog, returning matched tier IDs.
     pub fn resolve(&self, available_tiers: &[TierConfig]) -> Vec<TierId> {
         let mut resolved = Vec::new();
         for tier in available_tiers {
@@ -202,6 +225,7 @@ pub struct AsyncRuntimeLifecycle {
 }
 
 impl AsyncRuntimeLifecycle {
+    /// Create a new async runtime lifecycle manager with the given options.
     pub fn new(options: RuntimeOptions) -> RuntimeResult<Self> {
         options.validate()?;
         Ok(Self {
@@ -218,30 +242,37 @@ impl AsyncRuntimeLifecycle {
         })
     }
 
+    /// Get the routing seed from the runtime options.
     pub fn routing_seed(&self) -> RoutingSeed {
         self.options.routing_seed
     }
 
+    /// Get the current boot stage.
     pub fn boot_stage(&self) -> BootStage {
         self.boot_stage
     }
 
+    /// Get the current model load stage.
     pub fn model_load_stage(&self) -> ModelLoadStage {
         self.model_load_stage
     }
 
+    /// Get the current runtime state.
     pub fn state(&self) -> RuntimeState {
         self.state_machine.state()
     }
 
+    /// Get the currently active tier set.
     pub fn active_tiers(&self) -> &TierSet {
         &self.active_tiers
     }
 
+    /// Get the loaded manifest, if any.
     pub fn manifest(&self) -> Option<&AsyncCheckpointManifest> {
         self.manifest.as_ref()
     }
 
+    /// Get the number of recoveries performed.
     pub fn recovery_count(&self) -> u64 {
         self.recovery_count
     }
