@@ -87,4 +87,8 @@ impl fmt::Display for RuntimeError {
     }
 }
 
-impl Error for RuntimeError {}
+impl Error for RuntimeError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        None
+    }
+}
